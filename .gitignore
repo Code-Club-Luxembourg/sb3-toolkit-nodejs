@@ -1,0 +1,13 @@
+/.idea
+/node_modules
+/package-lock.json
+/*.sb3
+/*.html
+/*.html.sha256
+/dist/
+/studio_downloads/
+/examples/*/*.sb3
+/examples/*/*.json
+/examples/*/*.html
+/examples/*/*.sha256
+/examples/.env

@@ -1,0 +1,71 @@
+{
+  "name": "@code-club-luxembourg/sb3-toolkit",
+  "version": "1.0.0",
+  "description": "Node.js/TypeScript toolkit for working with Scratch .sb3 projects: builder API, validator, and an optional CLI.",
+  "keywords": [
+    "scratch",
+    "sb3",
+    "sb3-toolkit",
+    "validator",
+    "builder",
+    "education"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Michel Weimerskirch",
+    "email": "michel@weimerskirch.net"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Code-Club-Luxembourg/sb3-toolkit-nodejs.git"
+  },
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "sb3": "dist/cli/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "sb3:merge": "npm run build --silent && node dist/cli/index.js merge",
+    "sb3:grid": "npm run build --silent && node dist/cli/index.js grid",
+    "sb3:pack": "npm run build --silent && node dist/cli/index.js pack",
+    "sb3:project-download": "npm run build --silent && node dist/cli/index.js project-download",
+    "sb3:studio-download": "npm run build --silent && node dist/cli/index.js studio-download",
+    "generate-blocks": "tsx bin/generate-blocks.ts",
+    "lint": "eslint \"src/**/*.ts\"",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@turbowarp/packager": "^3.12.0",
+    "commander": "^14.0.3",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/jszip": "^3.4.1",
+    "@types/node": "^25.8.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "eslint": "^10.4.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.6"
+  }
+}

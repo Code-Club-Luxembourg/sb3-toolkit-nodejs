@@ -29,7 +29,7 @@ describe('findScripts filter overloads', () => {
 
   it('array of opcodes', () => {
     const sprite = makeMixedSprite();
-    const scripts = sprite.findScripts(['event_whenflagclicked', 'event_whenspriteclicked']);
+    const scripts = sprite.findScripts(['event_whenflagclicked', 'event_whenthisspriteclicked']);
     expect(scripts).toHaveLength(2);
   });
 

@@ -23,7 +23,7 @@ export const Events = {
   },
 
   whenSpriteClicked(): Block {
-    return Block.make('event_whenspriteclicked');
+    return Block.make('event_whenthisspriteclicked');
   },
 
   whenBroadcastReceived(broadcastOption: string): Block {

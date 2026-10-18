@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Block,
   BroadcastRef,
+  ErrorCode,
   Events,
   Id,
   Input,
@@ -175,6 +176,22 @@ describe('Block', () => {
     expect(blocks[b.id]?.parent).toBe(a.id);
     expect(blocks[c.id]?.parent).toBe(b.id);
     expect(blocks[c.id]?.next).toBeNull();
+  });
+});
+
+describe('Events.whenSpriteClicked', () => {
+  // Scratch 3 silently drops scripts whose hat opcode it does not know.
+  it('uses the opcode Scratch recognises', () => {
+    const hat = Events.whenSpriteClicked();
+    expect(hat.toBlocks()[hat.id]?.opcode).toBe('event_whenthisspriteclicked');
+  });
+
+  it('is known to the validator', () => {
+    const project = ScratchProject.create();
+    project.addSprite('Cat').addScript(Events.whenSpriteClicked().then(Looks.say('hi')));
+    const result = ScratchValidator.validate(project);
+    expect(result.errors.filter((e) => e.code === ErrorCode.UNKNOWN_OPCODE)).toEqual([]);
+    expect(result.isValid).toBe(true);
   });
 });
 

@@ -94,7 +94,7 @@ const OPCODE_SPECS = {
   event_whenflagclicked: { name: 'whenFlagClicked' },
   event_whenkeypressed: { name: 'whenKeyPressed', f: { KEY_OPTION: 'enum:Key' } },
   event_whenstageclicked: { name: 'whenStageClicked' },
-  event_whenspriteclicked: { name: 'whenSpriteClicked' },
+  event_whenthisspriteclicked: { name: 'whenSpriteClicked' },
   event_whenbroadcastreceived: { name: 'whenBroadcastReceived', f: { BROADCAST_OPTION: 'string' } },
   event_whenbackdropswitchesto: { name: 'whenBackdropSwitchesTo', f: { BACKDROP: 'string' } },
   event_whengreaterthan: {

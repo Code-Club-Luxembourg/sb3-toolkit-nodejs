@@ -112,6 +112,35 @@ describe('ScratchValidator — structural validation', () => {
     expect(result.errors.some((e) => e.code === ErrorCode.MISSING_FIELD && String(e.path).includes('assetId'))).toBe(true);
   });
 
+  it.each([
+    ['sampleCount', Number.NaN],
+    ['sampleCount', null],
+    ['sampleCount', 12.5],
+    ['rate', 22_050.5],
+    ['rate', -1]
+  ])('reports sound %s = %s as WRONG_TYPE or MISSING_FIELD', (field, value) => {
+    const stage = createStage();
+    const sound: Record<string, unknown> = {
+      name: 'laugh',
+      dataFormat: 'wav',
+      assetId: 'snd',
+      md5ext: 'snd.wav',
+      rate: 22_050,
+      sampleCount: 1000
+    };
+    sound[field] = value;
+    stage.sounds.push(sound as unknown as ScratchStage['sounds'][number]);
+    const project = makeProject([stage]);
+    project.assets.add('snd.wav', Buffer.from(''));
+    const result = ScratchValidator.validate(project);
+    expect(result.isValid).toBe(false);
+    expect(
+      result.errors.some(
+        (e) => (e.code === ErrorCode.WRONG_TYPE || e.code === ErrorCode.MISSING_FIELD) && String(e.path).endsWith(`.${field}`)
+      )
+    ).toBe(true);
+  });
+
   it('returns isValid false only when an error-severity issue exists', () => {
     // Unknown opcode is a warning by default → isValid should still be true
     const sprite = createSprite('Cat');

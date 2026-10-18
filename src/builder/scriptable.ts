@@ -126,6 +126,8 @@ export abstract class Scriptable {
    * `sampleCount` are auto-detected from the WAV header when `dataFormat` is
    * `wav` and the values are omitted; for other formats pass them explicitly
    * (defaults: 44100 Hz, 0 samples — `0` is a safe placeholder when unknown).
+   * A compressed WAV (e.g. IMA ADPCM) without a `fact` chunk has no derivable
+   * sample count, so this throws unless `sampleCount` is passed.
    */
   addSound(
     name: string,
@@ -145,6 +147,14 @@ export abstract class Scriptable {
       if (parsed) {
         resolvedRate ??= parsed.rate;
         resolvedSampleCount ??= parsed.sampleCount;
+      }
+      const formatTag = parsed?.formatTag;
+      if (resolvedSampleCount === undefined && formatTag !== undefined && !UNCOMPRESSED_WAV_FORMATS.has(formatTag)) {
+        // Compressed (e.g. IMA ADPCM) without a `fact` chunk: the sample count
+        // can't be derived from the byte length, so make the caller supply it.
+        throw new Error(
+          `Cannot determine the sample count of WAV sound "${name}" (format tag 0x${formatTag.toString(16)}, no fact chunk); pass sampleCount explicitly`
+        );
       }
     }
 
@@ -204,36 +214,46 @@ export abstract class Scriptable {
   }
 }
 
-function parseWavHeader(data: Buffer): { rate?: number; sampleCount?: number } | null {
+/** WAV format tags whose sample count is `data` length / block align: PCM, IEEE float, extensible. */
+const UNCOMPRESSED_WAV_FORMATS: ReadonlySet<number> = new Set([0x0001, 0x0003, 0xfffe]);
+
+function parseWavHeader(data: Buffer): { rate?: number; sampleCount?: number; formatTag?: number } | null {
   if (data.length < 44) return null;
   if (data.toString('ascii', 0, 4) !== 'RIFF' || data.toString('ascii', 8, 12) !== 'WAVE') {
     return null;
   }
 
+  // Walk chunks looking for `fmt ` (format, sample rate, frame size), `fact`
+  // (sample count of compressed formats) and `data` (length).
+  let formatTag: number | undefined;
   let rate: number | undefined;
-  let bitsPerSample: number | undefined;
-  let numChannels: number | undefined;
+  let blockAlign: number | undefined;
+  let factSampleCount: number | undefined;
   let dataBytes: number | undefined;
   let cursor = 12;
   while (cursor + 8 <= data.length) {
     const chunkId = data.toString('ascii', cursor, cursor + 4);
     const chunkSize = data.readUInt32LE(cursor + 4);
-    if (chunkId === 'fmt ' && cursor + 8 + Math.min(chunkSize, 16) <= data.length) {
-      numChannels = data.readUInt16LE(cursor + 8 + 2);
+    if (chunkId === 'fmt ' && chunkSize >= 16 && cursor + 8 + 16 <= data.length) {
+      formatTag = data.readUInt16LE(cursor + 8);
       rate = data.readUInt32LE(cursor + 8 + 4);
-      bitsPerSample = data.readUInt16LE(cursor + 8 + 14);
+      blockAlign = data.readUInt16LE(cursor + 8 + 12);
+    } else if (chunkId === 'fact' && chunkSize >= 4 && cursor + 8 + 4 <= data.length) {
+      factSampleCount = data.readUInt32LE(cursor + 8);
     } else if (chunkId === 'data') {
       dataBytes = chunkSize;
-      break;
     }
     cursor += 8 + chunkSize + (chunkSize % 2);
   }
 
-  const out: { rate?: number; sampleCount?: number } = {};
+  const out: { rate?: number; sampleCount?: number; formatTag?: number } = {};
   if (rate && rate > 0) out.rate = rate;
-  if (dataBytes !== undefined && numChannels && numChannels > 0 && bitsPerSample && bitsPerSample > 0) {
-    out.sampleCount = Math.floor(dataBytes / (numChannels * Math.floor(bitsPerSample / 8)));
+  if (factSampleCount !== undefined) {
+    out.sampleCount = factSampleCount;
+  } else if (dataBytes !== undefined && formatTag !== undefined && UNCOMPRESSED_WAV_FORMATS.has(formatTag)) {
+    if (blockAlign && blockAlign > 0) out.sampleCount = Math.floor(dataBytes / blockAlign);
   }
+  if (formatTag !== undefined) out.formatTag = formatTag;
   return Object.keys(out).length > 0 ? out : null;
 }
 

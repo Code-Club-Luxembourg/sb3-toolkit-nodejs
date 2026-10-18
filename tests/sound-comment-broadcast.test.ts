@@ -1,6 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { CommentRef, Events, ScratchProject } from '../src/model';
 
+/** IMA ADPCM WAV header (format tag 0x11, mono, 22050 Hz, 4-bit) + one 512-byte block. */
+function adpcmWav(factSampleCount?: number): Buffer {
+  const fmt = Buffer.alloc(8 + 20);
+  fmt.write('fmt ', 0, 'ascii');
+  fmt.writeUInt32LE(20, 4);
+  fmt.writeUInt16LE(0x11, 8); // audio format = IMA ADPCM
+  fmt.writeUInt16LE(1, 10); // num channels
+  fmt.writeUInt32LE(22_050, 12); // sample rate
+  fmt.writeUInt32LE(11_100, 16); // byte rate
+  fmt.writeUInt16LE(512, 20); // block align
+  fmt.writeUInt16LE(4, 22); // bits per sample
+  fmt.writeUInt16LE(2, 24); // extra size
+  fmt.writeUInt16LE(1017, 26); // samples per block
+  const chunks = [fmt];
+  if (factSampleCount !== undefined) {
+    const fact = Buffer.alloc(12);
+    fact.write('fact', 0, 'ascii');
+    fact.writeUInt32LE(4, 4);
+    fact.writeUInt32LE(factSampleCount, 8);
+    chunks.push(fact);
+  }
+  const data = Buffer.alloc(8 + 512);
+  data.write('data', 0, 'ascii');
+  data.writeUInt32LE(512, 4);
+  chunks.push(data);
+  const body = Buffer.concat(chunks);
+  const header = Buffer.alloc(12);
+  header.write('RIFF', 0, 'ascii');
+  header.writeUInt32LE(4 + body.length, 4);
+  header.write('WAVE', 8, 'ascii');
+  return Buffer.concat([header, body]);
+}
+
 describe('addSound', () => {
   it('stores with explicit rate + sampleCount', () => {
     const project = ScratchProject.create();
@@ -39,6 +72,23 @@ describe('addSound', () => {
     const sound = sprite.data().sounds[0];
     expect(sound.rate).toBe(22_050);
     expect(sound.sampleCount).toBe(4);
+  });
+
+  it('takes the sample count of a compressed WAV from its fact chunk', () => {
+    const sprite = ScratchProject.create().addSprite('Cat');
+    sprite.addSound('laugh', adpcmWav(1000), 'wav');
+    const sound = sprite.data().sounds[0];
+    expect(sound.rate).toBe(22_050);
+    expect(sound.sampleCount).toBe(1000);
+  });
+
+  it('refuses to guess the sample count of a compressed WAV without a fact chunk', () => {
+    const sprite = ScratchProject.create().addSprite('Cat');
+    expect(() => sprite.addSound('laugh', adpcmWav(), 'wav')).toThrow(/pass sampleCount explicitly/);
+    sprite.addSound('laugh', adpcmWav(), 'wav', undefined, 1017);
+    const sound = sprite.data().sounds[0];
+    expect(sound.rate).toBe(22_050);
+    expect(sound.sampleCount).toBe(1017);
   });
 
   it('stage can add sounds', () => {

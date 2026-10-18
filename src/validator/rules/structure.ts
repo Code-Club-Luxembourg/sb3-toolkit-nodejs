@@ -162,7 +162,7 @@ function validateAssetEntry(
   targetIndex: number,
   validFormats: ReadonlySet<string>,
   numberFields: readonly string[],
-  requireNonNegativeNumbers: boolean,
+  requireNonNegativeIntegers: boolean,
   errors: ValidationError[]
 ): void {
   if (!entry || typeof entry !== 'object') {
@@ -190,8 +190,10 @@ function validateAssetEntry(
     const value = c[field];
     if (typeof value !== 'number') {
       errors.push(error(ErrorCode.MISSING_FIELD, `${path}.${field}`, targetIndex, `${kind} ${field} must be a number`));
-    } else if (requireNonNegativeNumbers && value < 0) {
-      errors.push(error(ErrorCode.WRONG_TYPE, `${path}.${field}`, targetIndex, `${kind} ${field} must be non-negative`));
+    } else if (requireNonNegativeIntegers && !(Number.isInteger(value) && value >= 0)) {
+      errors.push(
+        error(ErrorCode.WRONG_TYPE, `${path}.${field}`, targetIndex, `${kind} ${field} must be a non-negative integer`)
+      );
     }
   }
 }

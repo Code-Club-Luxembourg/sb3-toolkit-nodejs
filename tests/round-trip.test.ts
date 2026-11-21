@@ -20,7 +20,7 @@ describe('round-trip via .sb3', () => {
   });
 
   async function tempPath(): Promise<string> {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'scratch-tools-'));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'sb3-toolkit-'));
     const file = path.join(dir, 'project.sb3');
     tempFiles.push(file);
     return file;

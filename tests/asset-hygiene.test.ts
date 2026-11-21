@@ -15,7 +15,7 @@ describe('asset hygiene', () => {
   });
 
   async function tempPath(suffix = '.sb3'): Promise<string> {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'scratch-tools-'));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'sb3-toolkit-'));
     const file = path.join(dir, `out${suffix}`);
     tempPaths.push(file);
     return file;
